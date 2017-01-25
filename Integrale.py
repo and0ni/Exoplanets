@@ -4,6 +4,7 @@ Created on Tue Jan 17 2017
 
 @author: Andoni Torres
 """
+
 #Programme qui lit les données de certains graphiques lsd et délimite les bornes d'intégration selon le fit gaussien de Stokes I et calcule l'intrégrale entre ces bornes des graphiques des paramèetres de Stokes afin de calculer le champ longitudinal Bl et Nl et les retourner en une liste
 #Peut-etre rajouter commandes pour comparer avec programme de Claire et sortir l'ecart
 
@@ -52,10 +53,10 @@ for filename in liste:
     y = gaus(x, popt[0], popt[1], popt[2], popt[3])
     
 # Graphique (non nécessaire)
-    import matplotlib.pyplot as plt
-    plt.plot(vr,sI,'k.',label='donnees')
-    plt.plot(x,y,'r-',label='lissage')
-    plt.show()
+#    import matplotlib.pyplot as plt
+#    plt.plot(vr,sI,'k.',label='donnees')
+#    plt.plot(x,y,'r-',label='lissage')
+#    plt.show()
     
         
 # Borne inferieure et supérieure d'intégration (+/- 3 sigma)
@@ -72,7 +73,7 @@ for filename in liste:
         bsI=popt[3]-sI[(np.array(bornesVR))]
         bsV=vr[(np.array(bornesVR))]*sV[(np.array(bornesVR))]
         bsN=sN[(np.array(bornesVR))]
-    
+            
     # Calcul des intégrales  
         Ii=float(simps(bsI,bVR))
         Iv=float(simps(bsV,bVR))
@@ -80,4 +81,12 @@ for filename in liste:
         
     # Champ longitudinal
         Bl= float((-2.14*10**11*(Iv/Ii))/(lambda0*c*geff))
+        
+#        import matplotlib.pyplot as plt
+#        plt.plot(x,y,'k.',label='donnees')
+#        plt.plot(x,y,'r-',label='lissage')
+#        plt.show()
+        
         print(filename, Bl)
+    else:
+        pass
