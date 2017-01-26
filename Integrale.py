@@ -39,12 +39,16 @@ for filename in liste:
 #Stokes N
     sN = A['5']
     
+    min1= min(sI)
+    min2=np.where(sI == min1)
+    min3=vr[min2]
+       
 #Lissage gaussien    
     
     def gaus(x,a,x0,sigma,Ic):
         return Ic-a*np.exp(-(x-x0)**2/(2*sigma**2))
         
-    params0=[0.1,1.0,50,1.0]  # Estimation initiale des paramètres
+    params0=[0.1,0,min3,1.0]  # Estimation initiale des paramètres
     
 
     popt, pcov = curve_fit(gaus, vr, sI, params0) # popt[]:paramètres optimisés; popt[0]: ordonnée moyenne ,popt[1]: abscisse moyenne, popt[2]:sigma, popt[3]: Icontinu
@@ -53,39 +57,32 @@ for filename in liste:
     y = gaus(x, popt[0], popt[1], popt[2], popt[3])
     
 # Graphique (non nécessaire)
-#    import matplotlib.pyplot as plt
-#    plt.plot(vr,sI,'k.',label='donnees')
-#    plt.plot(x,y,'r-',label='lissage')
-#    plt.show()
-    
-        
+    import matplotlib.pyplot as plt
+    plt.plot(vr,sI,'k.',label='donnees')
+    plt.plot(x,y,'r-',label='lissage')
+    plt.show()
+            
 # Borne inferieure et supérieure d'intégration (+/- 3 sigma)
-    binf=popt[1]-3*popt[2]
-    bsup=popt[1]+3*popt[2]
-    
+    binf=popt[1]-3*abs(popt[2])
+    bsup=popt[1]+3*abs(popt[2])
     
     if binf>-243 and bsup<243:
-    # Creer un array des index du domaine d'intégration 
-        bornesVR=([np.where((vr>=binf) & (vr<=bsup))])
+# Creer un array des index du domaine d'intégration 
+        bornesVR=([np.where((vr>=binf) & (vr<=bsup))]) 
         
-    # Données à intégrer
+# Données à intégrer
         bVR=vr[(np.array(bornesVR))]
         bsI=popt[3]-sI[(np.array(bornesVR))]
         bsV=vr[(np.array(bornesVR))]*sV[(np.array(bornesVR))]
         bsN=sN[(np.array(bornesVR))]
             
-    # Calcul des intégrales  
+# Calcul des intégrales  
         Ii=float(simps(bsI,bVR))
         Iv=float(simps(bsV,bVR))
         In=float(simps(bsN,bVR))
         
-    # Champ longitudinal
+# Champ longitudinal
         Bl= float((-2.14*10**11*(Iv/Ii))/(lambda0*c*geff))
-        
-#        import matplotlib.pyplot as plt
-#        plt.plot(x,y,'k.',label='donnees')
-#        plt.plot(x,y,'r-',label='lissage')
-#        plt.show()
         
         print(filename, Bl)
     else:
