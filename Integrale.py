@@ -13,11 +13,6 @@ import glob
 from scipy.integrate import simps
 from scipy.optimize import curve_fit
 
-lambda0 = 750
-geff = 1.25
-cc = 299792
-coeff = (-2.14*10**11)/(lambda0*cc*geff)
-
 def gaus(x,a,x0,sigma,Ic):
     return Ic-a*np.exp(-(x-x0)**2/(2*sigma**2))
     
@@ -29,13 +24,11 @@ os.chdir("C:/Users/Andoni Torres/Desktop/Stage_Hiver_2017/Champ_longitudinal")
 for file in glob.glob("[0-9]*pn.lsd"):
     liste.append(file)
     
-wave_lande = np.genfromtxt('mean_wave_lande(petit).txt',skip_header=0, dtype=[('0','S15'),('1','f8'),('2','f8')])
+wave_lande = np.genfromtxt('mean_wave_lande(petit).txt', dtype=[('0','S15'),('1','f8'),('2','f8')])
 
-nom = wave_lande['0'] 
+noms = list(['1036416pn.lsd','1050411pn.lsd','1647620pn.lsd', '1682860pn.lsd', '1685000pn.lsd', '1889655pn.lsd', '833515pn.lsd', '861285pn.lsd','897735pn.lsd','946332pn.lsd','978419pn.lsd'])
 wave = wave_lande['1']
 lande = wave_lande['2']
-
-print(wave_lande['1'])
 
 # liste = np.genfromtxt('noms.txt',dtype=str)
 
@@ -43,6 +36,16 @@ for filename in liste:
     os.chdir("C:/Users/Andoni Torres/Desktop/Stage_Hiver_2017/Champ_longitudinal")
     A = np.genfromtxt(filename,skip_header=2, dtype=[('0','f8'),('1','f8'),('2','f8'),('3','f8'),('4','f8'),('5','f8'),('6','f8')])
     
+    for i in range(0,(len(noms))):
+        if filename == noms[i]:
+            geff = lande[i]
+            lambda0 = wave[i]
+        else:
+            geff = 1.232
+            lambda0 = 668.1893
+            
+    cc = 299792
+    coeff = (-2.14*10**11)/(lambda0*cc*geff)
 # Defnir les donnes
 # Vitesse radiale
     VR = A['0']
