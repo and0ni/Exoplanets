@@ -13,29 +13,35 @@ import glob
 from scipy.integrate import simps
 from scipy.optimize import curve_fit
 
+os.chdir("/data/coolsnap/data_coolsnap_archive")
+#os.chdir("/data/coolsnap/spectra_espadons_coolsnap/")
+
 def gaus(x,a,x0,sigma,Ic):
     return Ic-a*np.exp(-(x-x0)**2/(2*sigma**2))
     
 def integ(a,b):
     return float(simps(a,b))
-    
-liste = []
-os.chdir("C:/Users/Andoni Torres/Desktop/Stage_Hiver_2017/Champ_longitudinal")
-for file in glob.glob("[0-9]*pn.lsd"):
-    liste.append(file)
-    
-wave_lande = np.genfromtxt('mean_wave_lande(petit).txt', dtype=[('0','S15'),('1','f8'),('2','f8')])
 
-noms = list(['1036416pn.lsd','1050411pn.lsd','1647620pn.lsd', '1682860pn.lsd', '1685000pn.lsd', '1889655pn.lsd', '833515pn.lsd', '861285pn.lsd','897735pn.lsd','946332pn.lsd','978419pn.lsd'])
+liste = []
+atrocites = [] # Fichiers dont le graphique Stokes I ne représentent pas une gausienne
+compteur = 0
+
+for file in glob.glob("[0-9]*pn.lsd"):
+   liste.append(file)
+
+wave_lande = np.genfromtxt('/h/torres/Downloads/mean_wave_lande(true)',skip_header=0, dtype=[('0','S15'),('1','f8'),('2','f8')])
+
+noms = wave_lande['0'] 
 wave = wave_lande['1']
 lande = wave_lande['2']
 
-# liste = np.genfromtxt('noms.txt',dtype=str)
+"""# Lire les noms des fichiers a partir d'une liste
+liste = np.genfromtxt('/h/torres/toto',dtype=str)"""
+
+print ('Fichier', 'Bl', 'erreur', 'x0',	'sigma', 'Ic',	'Hauteur du pic')
 
 for filename in liste:
-    os.chdir("C:/Users/Andoni Torres/Desktop/Stage_Hiver_2017/Champ_longitudinal")
-    A = np.genfromtxt(filename,skip_header=2, dtype=[('0','f8'),('1','f8'),('2','f8'),('3','f8'),('4','f8'),('5','f8'),('6','f8')])
-    
+
     for i in range(0,(len(noms))):
         if filename == noms[i]:
             geff = lande[i]
@@ -43,9 +49,12 @@ for filename in liste:
         else:
             geff = 1.232
             lambda0 = 668.1893
-            
-    cc = 299792
-    coeff = (-2.14*10**11)/(lambda0*cc*geff)
+	cc = 299792
+	coeff = (-2.14*10**11)/(lambda0*cc*geff)
+
+#    os.chdir("/data/coolsnap/data_coolsnap_archive")
+    A = np.genfromtxt(filename,skip_header=2, dtype=[('0','f8'),('1','f8'),('2','f8'),('3','f8'),('4','f8'),('5','f8'),('6','f8')])
+    
 # Defnir les donnes
 # Vitesse radiale
     VR = A['0']
@@ -111,13 +120,18 @@ for filename in liste:
         eiSV = integ(ebSV,bVR)
         eiSN = integ(ebSN,bVR)
         
-        erSV = ((coeff/iSI)*(eiSV))**2 
-        erSI = ((coeff*iSV/(iSI**2))*(eiSI))**2
+        erSV = ((coeff/iSI)*(eiSV**2))**2 
+        erSI = ((coeff*iSV/(iSI**2))*(eiSI**2))**2
         erreur = float(np.sqrt(erSV+erSI))
-        
-#        print(Bl,erreur)
-#        ErreurX = (coeff*(bsV*Ii-bsI*Iv))/(Ii**2)*ebsI        
-#        print(filename,"%.1f" % Bl)
-        print(filename, "%.f" % Bl, '+/-',"%.f" %  erreur)
+
+    	Xmin = np.mean(VR[np.where(SV == min(SV[domaine]))]) # Abcisse du SV minimum
+		print(Xmin)
+
+        compteur = compteur +1
+
+#        print(filename, "%.f" % Bl, "%.f" %  erreur, "%.f" %  popt[1],	"%.4f" %  popt[2],	"%.4f" %  popt[3],	"%.4f" %  (popt[3]-popt[0]))
+#        print filename, '\t', "%.f" % Bl,'\t', "%.f" %  erreur,'\t', "%.f" %  popt[1],'\t',	"%.4f" %  popt[2],'\t',	"%.4f" %  popt[3],'\t',	"%.4f" %  (popt[3]-popt[0])
     else:
-        pass
+		atrocites.append(filename)
+
+#print(len(liste), compteur, atrocites)
