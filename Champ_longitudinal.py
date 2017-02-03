@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 17 2017
-
 @author: Andoni Torres
+Programme qui lit les données de graphiques lsd et délimite les bornes d'intégration selon le fit gaussien de Stokes I et calcule
+l'intrégrale entre ces bornes des paramètres de Stokes afin de calculer le champ longitudinal Bl et Nl
 """
 
-#Programme qui lit les données de graphiques lsd et délimite les bornes d'intégration selon le fit gaussien de Stokes I et calcule l'intrégrale entre ces bornes des paramètres de Stokes afin de calculer le champ longitudinal Bl et Nl
 
 import numpy as np
 import os 
@@ -16,14 +16,15 @@ from scipy.optimize import curve_fit
 os.chdir("/data/coolsnap/data_coolsnap_archive")
 #os.chdir("/data/coolsnap/spectra_espadons_coolsnap/")
 
-def gaus(x,a,x0,sigma,Ic):
-    return Ic-a*np.exp(-(x-x0)**2/(2*sigma**2))
-    
+def gaus(x,a,x0,sigma,ic):
+    return ic-a*np.exp(-(x-x0)**2/(2*sigma**2))
+
 def integ(a,b):
     return float(simps(a,b))
 
 liste = []
-atrocites = [] # Fichiers dont le graphique Stokes I ne représentent pas une gausienne
+atrocites = [] # Liste des fichiers dont le graphique Stokes I ne représentent pas une gausienne
+cc = 299792
 compteur = 0
 
 for file in glob.glob("[0-9]*pn.lsd"):
@@ -49,7 +50,6 @@ for filename in liste:
         else:
             geff = 1.232
             lambda0 = 668.1893
-	cc = 299792
 	coeff = (-2.14*10**11)/(lambda0*cc*geff)
 
 #    os.chdir("/data/coolsnap/data_coolsnap_archive")
@@ -124,14 +124,17 @@ for filename in liste:
         erSI = ((coeff*iSV/(iSI**2))*(eiSI**2))**2
         erreur = float(np.sqrt(erSV+erSI))
 
-    	Xmin = np.mean(VR[np.where(SV == min(SV[domaine]))]) # Abcisse du SV minimum
-		print(Xmin)
+        imin = np.argmin(SV[domaine].tolist()) # Indice du SV minimum et maximum
+        imax = np.argmax(SV[domaine].tolist())
+#        Xmin = bVR[imin]
+#        imean = np.mean(SV[domaine].tolist())
+	print(bVR)
 
-        compteur = compteur +1
+        compteur = compteur+1
 
 #        print(filename, "%.f" % Bl, "%.f" %  erreur, "%.f" %  popt[1],	"%.4f" %  popt[2],	"%.4f" %  popt[3],	"%.4f" %  (popt[3]-popt[0]))
 #        print filename, '\t', "%.f" % Bl,'\t', "%.f" %  erreur,'\t', "%.f" %  popt[1],'\t',	"%.4f" %  popt[2],'\t',	"%.4f" %  popt[3],'\t',	"%.4f" %  (popt[3]-popt[0])
     else:
-		atrocites.append(filename)
+        atrocites.append(filename)
 
-#print(len(liste), compteur, atrocites)
+# print(len(liste), compteur, atrocites)
