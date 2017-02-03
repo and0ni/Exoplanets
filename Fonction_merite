@@ -1,0 +1,40 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 17 2017
+
+@author: Andoni Torres
+"""
+
+#Ébauche de programme pour la fonction de mérite
+
+import numpy as np
+
+#os.chdir("/h/www/www.cfht.hawaii.edu/coolsnap/")
+liste_coolsnap = np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log_archive_p.dat', delimiter=',', usecols=(3,9,17,30), dtype=[('0','S25'),('1','S15'),('2','S15'),('3','f8')])
+
+Objet = liste_coolsnap['0']
+Date = liste_coolsnap['1']
+Detection = liste_coolsnap['2']
+vsini = liste_coolsnap['3']
+
+# Accorder une pondération à chaque paramètres de l'étoile
+
+liste_bl = np.genfromtxt('/h/torres/Downloads/Bl_tab.txt', usecols=(0,1,2),skip_header=1, dtype=[('0','S25'),('1','f8'),('2','f8')])
+
+filenames = liste_bl['0']
+Bl = liste_bl['1']
+
+Etoiles = []
+liste_update = []
+
+for nom in Objet:
+	star = nom.replace(" ","")
+	star = star.upper()
+
+	liste_update.append(star)
+
+	if star not in Etoiles:
+		Etoiles.append(star)
+
+
+print(liste_update)
