@@ -9,21 +9,29 @@ Created on Tue Jan 17 2017
 
 # Accorder une pondération à chaque paramètres de l'étoile
 
-
 import numpy as np
-import matplotlib.pyplot as plt
+import math
 
+# Donner des points pour les paramètres
+# 10 points au total, vsini: 3 points, Champ longitudinal: 3 points, Detections: 4 points
+
+ponder = [4, 4, 2]
 # Importer les données
 
-liste_coolsnap = np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log_archive_p.dat', delimiter = ',', usecols=(3,9,17,30), dtype=[('0','S25'),('1','S15'),('2','S15'),('3','f8')])
+liste_coolsnap = np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log.dat', delimiter=',',
+                               usecols=(3, 2, 16, 24), dtype=[('0', 'S25'), ('1', 'S15'), ('2', 'S15'), ('3', 'f8')])
+"""
+liste_coolsnap = np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log_archive_p.dat', delimiter=',',
+                               usecols=(3, 2, 17, 31), dtype=[('0', 'S25'), ('1', 'S15'), ('2', 'S15'), ('3', 'f8')])
+"""
 
 Objet = liste_coolsnap['0']
-Date = liste_coolsnap['1']
+Odometre = liste_coolsnap['1']
 Detection = liste_coolsnap['2']
 vsini = liste_coolsnap['3']
 
-
-liste_bl = np.genfromtxt('/h/torres/Downloads/Bl_tab.txt', usecols=(0,1,2),skip_header=1, dtype=[('0','S25'),('1','f8'),('2','f8')])
+liste_bl = np.genfromtxt('/h/torres/Downloads/Bl.txt', usecols=(0, 1, 2), skip_header=1,
+                         dtype=[('0', 'S25'), ('1', 'f8'), ('2', 'f8')])
 
 filenames = liste_bl['0']
 Bl = liste_bl['1']
@@ -33,23 +41,185 @@ Bl = liste_bl['1']
 liste_update = []
 
 for i in Objet:
-	star = i.replace(" ","")
-	star = star.upper()
+    star = i.replace(" ", "")
+    star = star.upper()
+    liste_update.append(star)
 
-	liste_update.append(star)
-
-# Crée un dictionnaire qui associe chaque étoile à des listes de paramètres
+# Crée un dictionnaire qui associe chaque étoile un array de paramètres
+# Etoiles[nom de l'étoile] = [[Odometre], [Detection], [vsini]]
 
 Etoiles = {}
 
 for i in range(0, (len(liste_update))):
-	if liste_update[i] in Etoiles:
-		Etoiles[liste_update[i]].append(vsini[i])
-	else:
-		Etoiles[liste_update[i]] = [vsini[i]]
+    Etoiles[liste_update[i]] = [[], [], []]
 
-# Histogramme des paramètres de l'étoile
+for star in Etoiles.keys():
+    for i in range(0, (len(liste_update))):
+        if star == liste_update[i]:
+            Etoiles[star][0].append(Odometre[i].replace(" ", ""))
+            Etoiles[star][1].append(Detection[i].replace(" ", ""))
+            Etoiles[star][2].append(vsini[i])
 
 # Génération du coefficient du paramètre vsini
 
-print(Etoiles['GJ3789'])
+liste1 = []  # Liste des moyennes de vsini pour histogramme
+liste2 = []  # Liste de tous les coefficients pour histogramme
+
+coefficients = dict.fromkeys(Etoiles, [])
+
+for i, v in Etoiles.items():
+    liste_non_nan = [valeur for valeur in v[2] if not math.isnan(valeur)]  # Liste des vsini sans les valeurs 'nan'
+    if liste_non_nan != []:
+        moyenne = np.mean(liste_non_nan)
+        liste1.append(moyenne)
+        if 0 < moyenne < 2:
+            coeff = 1.0
+        elif 2 < moyenne < 3:
+            coeff = 1.0 - 0.75 / 3
+        elif 3 < moyenne < 5:
+            coeff = 1.0 - 0.75 / 2
+        elif 5 < moyenne < 8:
+            coeff = 1.0 - 0.75
+        elif 8 < moyenne < 14:
+            coeff = 1.0 - 0.90
+        elif 14 < moyenne < 20:
+            coeff = 1.0 - 0.90
+        elif 20 < moyenne < 60:
+            coeff = 1.0 - 0.95
+        elif 60 < moyenne:
+            coeff = 0
+        liste2.append(coeff)
+        coefficients[i] = [coeff]
+    else:
+        coeff = 0.15
+        liste2.append(coeff)
+        coefficients[i] = [coeff]
+
+"""
+# Histogramme des vsini moyens (valeur absolue) et des coefficents
+
+binf = -max(liste1)
+bsup = max(liste1)
+
+bins = np.arange(0, bsup, 1)
+# popt, pcov = curve_fit(gaus, abcs, plt.hist(liste2, bins=bins, alpha=0.5), params0)
+
+plt.xlim([binf, bsup])
+plt.hist(liste1, bins=bins, alpha=0.5)
+plt.show()
+
+plt.xlim([0, 1])
+plt.hist(liste2, alpha=0.5)
+plt.show()
+"""
+
+# Génération du coefficient du paramètre Bl
+
+intensite = []
+liste3 = []
+
+for i, v in Etoiles.items():
+    Champs = []
+    for item in v[0]:
+        if item in filenames:
+            ind = np.where(filenames == item)
+            Champs.append(Bl[ind[0][0]])
+    if len(Champs) > 1:
+        valeur1 = abs(max(Champs) - min(Champs))
+        intensite.append(valeur1)
+    else:
+        valeur1 = abs(Champs[0])
+        intensite.append(valeur1)
+
+    if 0 < valeur1 < 15:
+        coeff2 = 1.0
+    elif 15 < valeur1 < 50:
+        coeff2 = 1.0 - 0.75 / 3
+    elif 75 < valeur1 < 125:
+        coeff2 = 1.0 - 0.75 / 2
+    elif 125 < valeur1 < 200:
+        coeff2 = 1.0 - 0.75
+    elif 200 < valeur1 < 500:
+        coeff2 = 1.0 - 0.90
+    elif 500 < valeur1 < 1000:
+        coeff2 = 1.0 - 0.95
+    elif 1000 < valeur1:
+        coeff2 = 0
+    liste3.append(coeff2)
+    coefficients[i].append(coeff2)
+
+"""
+# Histogramme des Champ longitudinaux (Bl) et du coefficient
+
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+
+binf = 0
+bsup = 2000
+
+bins = np.arange(0, bsup, 25)
+# popt, pcov = curve_fit(gaus, abcs, plt.hist(liste4, bins=bins, alpha=0.5), params0)
+
+plt.xlim([binf, bsup])
+plt.hist(intensite, bins=bins, alpha=0.5)
+plt.show()
+
+bineux = np.arange(0, 1, 0.1)
+plt.xlim([0, 1])
+plt.hist(liste3, bins= bineux, alpha=0.5)
+plt.show()
+"""
+
+# Génération du coefficient du paramètre Detection
+# Détection Definite = 3 points, Marginale = 2 points, Nulle = -2 points
+
+liste4 = []
+
+for i, v in Etoiles.items():
+    points = 0
+    for detect in v[1]:
+        if detect == 'nulle':
+            points = points + 3.0
+        elif detect == 'marginale':
+            points = points - 2.0
+        elif detect == 'definite':
+            points = points - 3.0
+    coeff3 = points / (3*len(v[1]))
+    liste4.append(coeff3)
+    coefficients[i].append(coeff3)
+
+# Histogramme du coefficient pour les détections
+
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+plt.xlim([-1, 1])
+plt.hist(liste4, alpha=0.5)
+plt.show()
+
+
+# Accorder une cote à chaque étoile dépendament de ses paramètres et des pondérations
+
+etoiles_cotes = dict.fromkeys(Etoiles, )
+liste_cotes = []
+
+for i, v in coefficients.items():
+    cote = sum(np.multiply(v, ponder))
+    liste_cotes.append(cote)
+    etoiles_cotes[i] = cote
+
+for i in sorted(etoiles_cotes.items(), key=lambda x:x[1], reverse=True):
+    print i[0],':', "%.2f" % i[1]
+
+
+# Histogramme des cotes
+
+import matplotlib.pyplot as plt
+
+from scipy.optimize import curve_fit
+
+bins = np.arange(0, 10, 1)
+plt.xlim([0, 10])
+plt.hist(liste_cotes, bins=bins, alpha=0.5)
+plt.show()
