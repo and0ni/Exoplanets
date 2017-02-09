@@ -6,6 +6,7 @@ Stokes afin de calculer le champ longitudinal Bl et Nl """
 import numpy as np
 import os
 import glob
+from scipy import interpolate
 from scipy.integrate import simps
 from scipy.optimize import curve_fit
 
@@ -17,13 +18,17 @@ def gaus(x, a, x0, sigma, ic):
 def integ(a, b):
     return float(simps(a, b))
 
+def func(x, a, x0, sigma, ic, a2, x02, sigma2, ic2):
+    return gaus + gaus
+params01 = [0.1, -0.1, 0.01, 0]
+params02 = [-0.1, 0.1, 0.01, 0]
 
 liste = []
 atrocites = []  # Liste des fichiers dont le graphique Stokes I ne représentent pas une gausienne
 cc = 299792
 
-# for file in glob.glob("/data/coolsnap/data_coolsnap_archive/[0-9]*pn.lsd"):
-for file in glob.glob("/data/coolsnap/spectra_espadons_coolsnap/[0-9]*pn.lsd"):
+for file in glob.glob("/data/coolsnap/data_coolsnap_archive/[0-9]*pn.lsd"):
+#for file in glob.glob("/data/coolsnap/spectra_espadons_coolsnap/[0-9]*pn.lsd"):
     liste.append(file)
 
 wave_lande = np.genfromtxt('/h/torres/Downloads/mean_wave_lande(true)', dtype=[('0', 'S15'), ('1', 'f8'), ('2', 'f8')])
@@ -35,7 +40,7 @@ lande = wave_lande['2']
 """# Lire les noms des fichiers a partir d'une liste
 liste = np.genfromtxt('/h/torres/toto',dtype=str)"""
 
-print ('Fichier', 'Bl', 'erreur', 'x0', 'sigma', 'Ic', 'Hauteur du pic')
+print 'Champ longitudinal: Fichier', 'Bl', 'erreur', 'Paramètres de Stokes V: min(x,y)', 'min(x,y)'
 
 for filename in liste:
 
@@ -107,17 +112,27 @@ for filename in liste:
         # Champ longitudinal
         Bl = float(coeff * (iSV / iSI))
 
-        """# Paramètres de Stokes N (minimum et maximum de fit gaussiens
-        params0_N = [0.2, Xmoy, 5.0, 1.0]
-        popt_N, pcov_N = curve_fit(gaus, bVR, bSV, params0_N)
 
-        x = np.arange(binf, bsup, 0.1)
-        y = gaus(x, popt_N[0], popt_N[1], popt_N[2], popt_N[3])
+        if len(SV[domaine][0][0]) > 2:
+            k=3
+        else:
+            k=1
+
+        s = interpolate.UnivariateSpline(bVR[0][0], SV[domaine][0][0], k=k, s=0)
+
+        xs = np.arange(bVR[0][0][0], bVR[0][0][-1], 0.01)
+        y = s(xs)
+
+        abc = max(y)
+        compton = float(xs[np.where(y == max(y))])
+        efg = min(y)
+        bompton = float(xs[np.where(y == min(y))])
 
         import matplotlib.pyplot as plt
 
-        plt.plot(VR, SV, 'k.', label='donnees')
-        plt.plot(x, y, 'r-', label='lissage')
+        """plt.figure()
+        plt.plot(bVR[0][0], SV[domaine][0][0], 'k.', label='donnees')
+        plt.plot(xs, y, 'r-', label='lissage')
         plt.show()"""
 
         # Calcul de l'erreur
@@ -130,16 +145,11 @@ for filename in liste:
         erSV = ((coeff / iSI) * (eiSV ** 2)) ** 2
         erSI = ((coeff * iSV / (iSI ** 2)) * (eiSI ** 2)) ** 2
         erreur = float(np.sqrt(erSV + erSI)) + abs(iSN)
-
-    	print filename, '\t', "%.f" % Bl,'\t', "%.f" %  erreur
+    	print filename, '\t', "%.f" % Bl,'\t', "%.f" %  erreur,'\t',"%.5f" % abc,'\t',"%.2f" % compton,'\t',"%.5f" % efg,'\t',"%.2f" % bompton
 
     #        print(filename, "%.f" % Bl, "%.f" %  erreur, "%.f" %  popt[1],	"%.4f" %  popt[2],	"%.4f" %  popt[3],	"%.4f" %  (popt[3]-popt[0]))
     #        print filename, '\t', "%.f" % Bl,'\t', "%.f" %  erreur,'\t', "%.f" %  popt[1],'\t',	"%.4f" %  popt[2],'\t',	"%.4f" %  popt[3],'\t',	"%.4f" %  (popt[3]-popt[0])
     else:
         atrocites.append(filename)
 
-"""        imin = np.argmin(SV[domaine].tolist()) # Indice du SV minimum et maximum
-        imax = np.argmax(SV[domaine].tolist())
-        Xmin = bVR[imin]
-        imean = np.mean(SV[domaine].tolist())"""
 # print(len(liste), atrocites)
