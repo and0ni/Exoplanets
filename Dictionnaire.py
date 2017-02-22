@@ -15,17 +15,18 @@ import glob
 
 def etoiles():
     liste_coolsnap = np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log.dat',
-                                   delimiter=',', usecols=(3, 2, 16, 24),
-                                   dtype=[('0', 'S25'), ('1', 'S25'), ('2', 'S25'), ('3', 'f8')])
+                                   delimiter=',', usecols=(3, 2, 16, 24, 9),
+                                   dtype=[('0', 'S25'), ('1', 'S25'), ('2', 'S25'), ('3', 'f8'), ('4', 'S25')])
 
     liste_archive = (np.genfromtxt('/h/www/www.cfht.hawaii.edu/coolsnap/clichesfroids_log_archive_p.dat',
-                                   delimiter=',', usecols=(3, 2, 17, 31),
-                                   dtype=[('0', 'S25'), ('1', 'S25'), ('2', 'S25'), ('3', 'f8')]))
+                                   delimiter=',', usecols=(3, 2, 17, 31, 9),
+                                   dtype=[('0', 'S25'), ('1', 'S25'), ('2', 'S25'), ('3', 'f8'), ('4', 'S25')]))
 
     objet = np.concatenate((liste_archive['0'], liste_coolsnap['0']), axis=0)
     odometre = np.concatenate((liste_archive['1'], liste_coolsnap['1']), axis=0)
     detection = np.concatenate((liste_archive['2'], liste_coolsnap['2']), axis=0)
     vsini = np.concatenate((liste_archive['3'], liste_coolsnap['3']), axis=0)
+    dates = np.concatenate((liste_archive['4'], liste_coolsnap['4']), axis=0)
 
     # Crée une nouvelle liste des noms des étoiles standarisé sans espaces et en majuscules et odomètres sans espaces
 
@@ -43,12 +44,12 @@ def etoiles():
         odo_upd.append(odu)
 
     # Crée un dictionnaire qui associe chaque étoile à un array de paramètres
-    # Etoiles[nom de l'étoile] = [[Odometre], [Detection], [vsini], [Bl]]
+    # Etoiles[nom de l'étoile] = [[Odometre], [Detection], [vsini], [Bl], [erreur Bl], [Date]]
 
     Etoiles = {}
 
     for i in range(0, (len(liste_update))):
-        Etoiles[liste_update[i]] = [[],[],[],[],[]]
+        Etoiles[liste_update[i]] = [[],[],[],[],[],[]]
 
     for star in Etoiles.keys():
         for i in range(0, (len(liste_update))):
@@ -56,6 +57,7 @@ def etoiles():
                 Etoiles[star][0].append(odometre[i].replace(" ", ""))
                 Etoiles[star][1].append(detection[i].replace(" ", ""))
                 Etoiles[star][2].append(vsini[i])
+                Etoiles[star][5].append(dates[i])
 
     # PARTIE BL
 
@@ -102,8 +104,8 @@ def stokes():
                                   dtype=[('0', 'f8'), ('1', 'f8'), ('2', 'f8'), ('3', 'f8'), ('4', 'f8'), ('5', 'f8'),
                                          ('6', 'f8')])
 
-                Stokes[file.replace("pn.lsd", "")] = [A['0'].tolist(),A['1'].tolist(),A['2'].tolist(),A['3'].tolist(),
-                                                      A['4'].tolist(),A['5'].tolist(),A['6'].tolist(),668.1893, 1.232]
+                Stokes[file.replace("pn.lsd", "")] = [A['0'].tolist(),A['1'].tolist(),A['3'].tolist(),A['5'].tolist(),
+                                                      A['2'].tolist(),A['4'].tolist(),A['6'].tolist(),668.1893, 1.232]
 
     # Landé et geff
 
