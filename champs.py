@@ -13,6 +13,9 @@ from scipy.integrate import simps
 from scipy.optimize import curve_fit
 import Dictionnaire
 import matplotlib.pyplot as plt
+import lmfit
+
+#plt.ion()
 
 Etoiles = Dictionnaire.etoiles() # Dictionnaire des étoiles et de leurs paramètres
 Stokes = Dictionnaire.stokes() # Dicitonnaire des odomètres et des paramètres des profils Stokes
@@ -32,7 +35,6 @@ cc = 299792  # Vitesse de la lumière km/s
 print 'Champ longitudinal: Fichier', 'Bl', 'erreur', 'Paramètres de Stokes V: min(x,y)', 'min(x,y)'
 
 for star, param in Etoiles.items():
-    colonnes = np.ceil(len(param[0])/2)
     for item in param[0]:
         if item in Stokes.keys():
             VR = np.array(Stokes[item][0]) # Vitesse radiale
@@ -60,18 +62,6 @@ for star, param in Etoiles.items():
 
                 # popt[]:paramètres optimisés; popt[0]: ordonnée moyenne ,popt[1]: abscisse moyenne, popt[2]: écart-type, popt[3]: continuum
                 popt, pcov = curve_fit(gaus, VR, SI, params0)
-
-                """
-                #Graphique
-
-                x = np.arange(-243,243, 0.2)
-                y = gaus(x, popt[0], popt[1], popt[2], popt[3])
-
-                import matplotlib.pyplot as plt
-                plt.plot(VR,SI,'k.',label='donnees')
-                plt.plot(x,y,'r-',label='lissage')
-                plt.show()
-                """
 
                 # Borne inferieure et supérieure d'intégration (+/- 3 sigma)
                 binf = popt[1] - 3 * popt[2]
@@ -103,12 +93,12 @@ for star, param in Etoiles.items():
 
                     s = interpolate.UnivariateSpline(bVR[0][0], SV[domaine][0][0], k=k, s=0)
                     xs = np.arange(bVR[0][0][0], bVR[0][0][-1], 0.01)
-                    y = s(xs)
+                    ys = s(xs)
 
-                    abc = max(y) # max de l'interpolation
-                    toto1 = float(xs[np.where(y == max(y))]) # abscisse max
-                    efg = min(y) # min de l'interpolation
-                    toto2 = float(xs[np.where(y == min(y))]) # abscisse min
+                    abc = max(ys) # max de l'interpolation
+                    toto1 = float(xs[np.where(ys == max(ys))]) # abscisse max
+                    efg = min(ys) # min de l'interpolation
+                    toto2 = float(xs[np.where(ys == min(ys))]) # abscisse min
 
                     # Calcul de l'erreur
                     ebSI = eSI[domaine]
@@ -121,29 +111,47 @@ for star, param in Etoiles.items():
                     erSI = ((coeff * iSV / (iSI ** 2)) * (eiSI ** 2)) ** 2
                     erreur = float(np.sqrt(erSV + erSI)) + abs(iSN)
 
-                    if len(param[0]) >1:
-                        plt.subplot(np.ceil(len(param[0])/2), 2, param[0].index(item)+1)
-                        plt.plot(bVR[0][0], SV[domaine][0][0], 'k.')
-                        plt.plot([toto1, toto1], [0, abc], color='k', linestyle='--')
-                        plt.annotate(r'toto2', xy=(abc, toto1), xytext=(abc, toto1), fontsize=16)
-                        plt.plot([toto2, toto2], [0, efg], color='k', linestyle='--')
-                        plt.axhline(y=0, color='k', linestyle='-')
-                        plt.axvline(x=0, color='k', linestyle='-')
-                        plt.plot(xs, y, 'r-')
+
+
+
+                    if len(param[0]) % 2 == 0:
+                        col, rang = len(param[0])/2, 2
+                    elif len(param[0]) == 1:
+                        col, rang = 1, 1
                     else:
-                        plt.figure()
-                        plt.plot(bVR[0][0], SV[domaine][0][0], 'k.')
-                        plt.plot([toto1, toto1], [0, abc], color='k', linestyle='--')
-                        plt.plot([toto2, toto2], [0, efg], color='k', linestyle='--')
-                        plt.axhline(y=0, color='k', linestyle='-')
-                        plt.axvline(x=0, color='k', linestyle='-')
-                        plt.plot(xs, y, 'r-')
+                        col, rang = len(param[0])/2+1, 2
+
+                    ax = plt.subplot(col, rang, param[0].index(item) + 1)
+
+                    x = np.arange(-243, 243, 0.2)
+                    y = gaus(x, popt[0], popt[1], popt[2], popt[3])
+
+                    ax.plot(VR,SI,'k.') # Stokes I sur tout le domaine
+                    #ax.plot(bVR, SI[domaine], 'r-') # Gausienne
+
+                    ax.fill_between(VR, SI, popt[3], where=binf < VR, facecolor='green', interpolate=True)
+                    #ax.plot(bVR[0][0], SV[domaine][0][0], 'k.') # Stokes V sur le domaine d'intégration
+                    #ax.plot(xs, ys, 'r-') # Interpolation de Stokes V
+
+                    ax.set_title(str(item)+', '+ str(param[5][param[0].index(item)]))
+
+                    #ax.plot([toto1, toto1], [0, abc], color='k', linestyle='--')
+                    #ax.text(0, abc, str("aaaa"), fontsize=16)
+
+                    #ax.plot([toto2, toto2], [0, efg], color='k', linestyle='--')
+
+                    #ax.axhline(y=0, color='k', linestyle='-')
+                    #ax.axvline(x=0, color='k', linestyle='-')
+
+
+
                     print item, '\t', "%.2f" % Bl, '\t', "%.2f" % erreur, '\t', "%.5f" % abc, '\t', "%.2f" % toto1, '\t', "%.5f" % efg, '\t', "%.2f" % toto2
                 else:
                     atrocites.append(item)
             else:
                 atrocites.append(item)
-    plt.title('Stokes N and interpolation curve for object ' + str(star))
+    #plt.tight_layout()
+    plt.suptitle('Stokes N and interpolation curve for object ' + str(star), fontsize=16)
     plt.show()
 
 def main():
